@@ -1,0 +1,190 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title> CHINABIM后台管理系统</title>
+<link rel="stylesheet" type="text/css" href="css/base.css" />
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+
+
+<script type="text/javascript">
+
+
+window.onload = function(){
+	var timestamp = Date.parse(new Date());
+	var num = MathRand();
+	document.getElementById("filename").value=timestamp+''+num; 
+}
+
+function MathRand(){
+    var Num="";
+    for(var i=0;i<6;i++){
+   		Num+=Math.floor(Math.random()*10);
+	}
+   return Num;
+} 
+
+var xhr=new XMLHttpRequest();
+var clock=null;
+var filename=null;
+function file(obj){
+	if(!(/\.(zip|rar)$/i.test(obj.value))){
+ 		alert('只支持zip|rar格式(压缩文件)');
+ 		return false;
+ 	}
+
+ 	var movs = document.getElementsByName('file')[0].files[0];
+ 	if(movs.size <= 0){
+ 		alert('空文件');
+ 		return false;
+ 	}
+	var exp = obj.value.split('.');
+	$('.filesize').text('文件大小：'+movs.size+'kb');
+	var filename = document.getElementById("filename").value+'.'+exp[exp.length-1]; 
+	document.getElementById("filename").value=filename;
+	document.getElementById("filesize").value=movs.size;
+	$('.upstatus').text('上传中，请勿关闭窗口...');
+
+    clock=window.setInterval(sendfile,1000);
+}
+
+var sendfile = (function(){
+
+	const LENGHT=2*1024*1024;
+	var sta = 0;
+	var end =sta+LENGHT;
+	var flag=false;
+
+	var blob = null;
+	var fd = null;
+
+	var percent=0;
+
+	return (function (){
+
+		if(flag==true){
+			return;
+		}
+
+		var mov = document.getElementsByName('file')[0].files[0];
+
+		var totalsize = mov.size;
+
+		if(sta >= totalsize){
+			clearInterval(clock);
+			return;
+		}
+
+		blob=mov.slice(sta,end);
+		fd=new FormData();
+		fd.append('part',blob);
+		var filename = document.getElementById("filename").value; 
+		fd.append('filename',filename);
+		up(fd);
+		sta=end;
+		end=sta+LENGHT;
+		flag=false;
+
+		percent= 100 * end / totalsize;
+		if(percent >= 100){
+ 			percent=100;
+ 			var id=$('input[name="id"]').val();
+ 			var filename = document.getElementById("filename").value; 
+ 			var filesize = document.getElementById("filesize").value; 
+			$.post('ruanjian.html?act=sliceup',{id:id,filename:filename,filesize:filesize},function(res){
+				//$('.upstatus').text('上传完成');
+				alert('上传完成');
+				window.location.href='ruanjian.php';
+			})
+ 		}
+ 		document.getElementById("bar").style.width=percent+'%';
+ 		document.getElementById("num").innerHTML = parseInt(percent)+'%';
+ 		document.getElementById("succupsize").innerHTML = '已上传大小：'+end+'kb';
+
+	});
+})();
+
+function up(fd){
+	xhr.open('POST','ruanjian.html?act=sliceup',false);
+ 	xhr.send(fd);
+}
+
+function bindInterval(funcName){
+     var args=[];
+     for(var i=1;i<arguments.length;i++){
+         args.push(arguments[i]);
+     }
+     return function(){
+         funcName.apply(this,args);
+     }
+}
+</script>
+<style type="text/css">
+	#progress{
+		width: 200px;
+		height: 15px;
+		border: 1px solid #18a3d5;
+		border-radius: 3px;
+		display: inline-block;
+		margin-top:20px;
+	
+   		text-align: center;
+   		color:#FFFFFF;
+   		position: relative;
+	}
+	#bar{
+		height: 15px;
+		width: 0%;
+		background: #18a3d5;
+		position: absolute;
+		top:0;
+		left:0;
+	}
+	.jdt{
+		margin-left:50px;
+	}
+	.jdt .tit{
+		position: relative; 
+		top:-5px;
+	}
+	#num{
+		position: absolute;  
+		color: red; 
+		left:42%;
+	}
+</style>
+</head>
+<body>
+<div id="wrapper">
+<div class="clearfix m_title"><h1>软件管理 &#187; 上传软件文件</h1></div>
+
+<div class="clearfix border_deepblue"><h2 class="l bg_deepblue">常规信息</h2></div>
+<div class="tbg_highlight">
+	
+	
+
+	<div class="border_gray"><label class="item_title">软件文件：</label>
+
+	  <input type="file" value="上传" name="file" id="file" onchange="file(this)" />zip|rar格式(压缩文件)
+	  <input id="filename" name="filename" type="hidden" value="" /><br>
+      <div class="jdt">
+        <span class='tit'>进度条：</span>
+	   <div id="progress">
+    	<div id="bar"></div>
+    	<div id="num">0%</div>
+      </div>&nbsp;&nbsp;<span class="filesize"></span>
+      &nbsp;&nbsp;<span id="succupsize"></span>
+      &nbsp;&nbsp;<span class="upstatus"></span>
+    </div>
+
+	</div>
+	 
+</div>
+<!-- <div class="bottom_submit"><input class="button_blue" type="submit" value="确定" /><input class="button_blue" type="button" value="返回" onclick="history.go(-1);" /></div> -->
+<input name="id" type="hidden" value="66">
+<input name="filesize" id="filesize" type="hidden" value="">
+
+</div>
+
+</body>
+</html>
